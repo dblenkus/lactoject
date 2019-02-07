@@ -86,7 +86,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'lactoject.wsgi.application'
+ASGI_APPLICATION = 'lactoject.routing.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
+        },
+    },
+}
 
 
 # Database
