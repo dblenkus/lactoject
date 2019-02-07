@@ -12,20 +12,34 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') not in ['False', 'false', 'no', '0']
+print('INFO: DEBUG is set to {}.'.format(DEBUG))
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
-
+if not DEBUG and 'DJANGO_SECRET_KEY' not in os.environ:
+    raise ImproperlyConfigured(
+        'DJANGO_SECRET_KEY environment variable must be set when DEBUG is False.'
+    )
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'g%o+9)76*lzi*pc1p*l5k8w*2bu5qzqq=ofm*!&*!c64zw=u*p'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'secret')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+if not DEBUG and 'DJANGO_ALLOWED_HOSTS' not in os.environ:
+    raise ImproperlyConfigured(
+        'DJANGO_ALLOWED_HOSTS environment variable must be set when DEBUG is False.'
+    )
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'index'
 
 
 # Application definition
@@ -37,6 +51,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'channels',
+    'material',
+
+    'lactolyse',
 ]
 
 MIDDLEWARE = [
@@ -75,10 +94,29 @@ WSGI_APPLICATION = 'lactoject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lactoject',
+        'USER': 'lactoject',
+        'HOST': 'postgres',
+        'PORT': 5432
     }
 }
+if 'DJANGO_POSTGRES_PASSWORD' in os.environ:
+    DATABASES['default']['PASSWORD'] = os.environ.get('DJANGO_POSTGRES_PASSWORD')
+
+# Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 
 # Password validation
@@ -115,6 +153,44 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
+# https://docs.djangoproject.com/en/dev/howto/static-files/
 
+STATIC_ROOT = '/srv/static'
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = '/srv/media'
+MEDIA_URL = '/media/'
+
+
+# Set LACTOJECT_LOG_FILE environment variable to a file path to enable logging
+# debugging messages to to a file.
+log_file_path = os.environ.get('LACTOJECT_LOG_FILE', os.devnull)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s - %(levelname)s - %(name)s[%(process)s]: %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'standard',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': log_file_path,
+            'formatter': 'standard',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+    }
+}
