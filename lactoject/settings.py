@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     'channels',
     'material',
+    'storages',
 
     'lactolyse',
 ]
@@ -164,10 +165,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
-STATIC_ROOT = '/srv/static'
+AWS_STORAGE_BUCKET_NAME = 'lactoject'
+
+# Set this to silence the warning.
+AWS_DEFAULT_ACL = None
+
+STATICFILES_STORAGE = 'lactoject.storage_backends.StaticStorage'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/srv/media'
+DEFAULT_FILE_STORAGE = 'lactoject.storage_backends.MediaStorage'
 MEDIA_URL = '/media/'
 
 
