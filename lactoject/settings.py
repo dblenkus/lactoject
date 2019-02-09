@@ -203,3 +203,8 @@ LOGGING = {
         },
     }
 }
+
+
+# Lactolyse settings.
+
+LACTOLYSE_EXECUTOR = 'lactolyse.executors.local'
