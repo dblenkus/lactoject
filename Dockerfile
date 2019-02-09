@@ -25,7 +25,7 @@ RUN chmod +x manage.py && \
       texlive-collection-xetex \
       texlive-makecell && \
     dnf clean all && \
-    adduser --system django && \
+    adduser --system --create-home --home-dir /home/django django && \
     chown django: /srv/lactoject/
 
 USER django
